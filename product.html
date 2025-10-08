@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — Products (Gallery)</title>
+<title>Admin — Products Gallery</title>
 <style>
 :root {
   --bg: #faf9f7;
@@ -28,26 +28,29 @@ header { background: linear-gradient(90deg,#000,var(--accent)); color:#fff; padd
   cursor:pointer;
   font-weight:600;
 }
-main { flex:1; max-width:900px; margin:2rem auto; background:#fff; padding:2rem; border-radius:var(--radius); box-shadow:0 4px 12px rgba(0,0,0,0.1); }
+main { flex:1; max-width:1000px; margin:2rem auto; background:#fff; padding:2rem; border-radius:var(--radius); box-shadow:0 4px 12px rgba(0,0,0,0.1); display:flex; flex-direction:column; gap:2rem; }
 
 /* Form */
-form { display:flex; flex-direction:column; gap:12px; margin-bottom:2rem; }
+form { display:flex; flex-direction:column; gap:12px; background:#f8f6f4; padding:1rem; border-radius:var(--radius); }
 input, select { padding:10px; border-radius:6px; border:1px solid #ccc; font-size:1rem; width:100%; }
 button { padding:12px; border:none; border-radius:6px; background:var(--accent); color:#fff; cursor:pointer; font-size:1rem; }
 button:hover { background:#81483a; }
 
 /* Image previews */
 #previewContainer { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+#previewContainer .preview-image { position:relative; }
 #previewContainer img { width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #ccc; }
+#previewContainer .remove-img { position:absolute; top:-6px; right:-6px; background:#dc3545; color:#fff; border-radius:50%; width:20px; height:20px; font-size:12px; text-align:center; line-height:20px; cursor:pointer; }
 
-/* Products Table */
-table { width:100%; border-collapse:collapse; }
-th, td { padding:12px; border-bottom:1px solid #ddd; text-align:left; vertical-align:top; }
-th { background:var(--accent); color:#fff; }
-td img { width:60px; height:60px; object-fit:cover; border-radius:6px; margin-right:4px; }
-.action-btn { padding:6px 12px; border:none; border-radius:6px; cursor:pointer; color:#fff; margin-right:4px; }
-.edit-btn { background:#007bff; }
-.delete-btn { background:#dc3545; }
+/* Products List */
+.products-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:1rem; }
+.product-card { background:#fff; border:1px solid #ddd; border-radius:var(--radius); padding:0.8rem; display:flex; flex-direction:column; gap:6px; transition:0.2s; }
+.product-card:hover { transform:translateY(-3px); box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+.product-card img { width:100%; border-radius:var(--radius); object-fit:cover; height:140px; }
+.product-card h3 { font-size:16px; margin-top:4px; }
+.product-card p { font-size:14px; margin:2px 0; color:#555; }
+.card-actions { display:flex; gap:6px; margin-top:auto; }
+.card-actions button { flex:1; }
 
 /* Loader */
 #loader { position: fixed; top:0; left:0; width:100%; height:100%; background:#fff; display:flex; justify-content:center; align-items:center; z-index:5000; }
@@ -58,12 +61,8 @@ td img { width:60px; height:60px; object-fit:cover; border-radius:6px; margin-ri
 @keyframes bounce { 0%{transform:translateY(0);}50%{transform:translateY(-20px);}100%{transform:translateY(0);} }
 
 /* Responsive */
-@media(max-width:768px){
-  table, thead, tbody, th, td, tr { display:block; }
-  tr { margin-bottom:12px; }
-  td { display:flex; justify-content:space-between; padding:8px 0; flex-wrap:wrap; }
-  td img { margin:4px 4px 0 0; }
-}
+@media(max-width:768px){ .products-list { grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); } }
+@media(max-width:480px){ form { padding:0.8rem; } }
 </style>
 </head>
 <body>
@@ -74,7 +73,7 @@ td img { width:60px; height:60px; object-fit:cover; border-radius:6px; margin-ri
 </div>
 
 <header>
-  🛠️ Admin Products (Gallery)
+  🛠️ Admin Products Gallery
   <button class="exit-btn" onclick="window.location.href='index.html'">Exit</button>
 </header>
 
@@ -98,28 +97,17 @@ td img { width:60px; height:60px; object-fit:cover; border-radius:6px; margin-ri
     <input type="file" id="prodImageFile" accept="image/*" style="display:none;" multiple>
     <div id="previewContainer"></div>
 
-    <button type="submit">Add Product</button>
+    <button type="submit" id="submitBtn">Add Product</button>
   </form>
 
-  <table id="productsTable">
-    <thead>
-      <tr>
-        <th>Images</th>
-        <th>Name</th>
-        <th>Price</th>
-        <th>Category</th>
-        <th>Actions</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <div class="products-list" id="productsList"></div>
 </main>
 
 <script>
-// Loader fade
+// Loader
 window.addEventListener('load', ()=>{
   const loader = document.getElementById('loader');
-  setTimeout(()=>{ loader.style.opacity=0; setTimeout(()=>loader.style.display='none',500); }, 1500);
+  setTimeout(()=>{ loader.style.opacity=0; setTimeout(()=>loader.style.display='none',500); }, 1000);
 });
 
 // Multi-image preview
@@ -130,54 +118,71 @@ let previewImages = [];
 
 uploadBtn.addEventListener('click', ()=>prodImageFile.click());
 prodImageFile.addEventListener('change', ()=>{
-  previewImages = [];
   previewContainer.innerHTML = '';
-  const files = [...prodImageFile.files];
-  files.forEach(file=>{
+  previewImages = [];
+  [...prodImageFile.files].forEach((file, i)=>{
     const reader = new FileReader();
     reader.onload = e=>{
       previewImages.push(e.target.result);
-      const img = document.createElement('img');
-      img.src = e.target.result;
-      previewContainer.appendChild(img);
+      const wrapper = document.createElement('div');
+      wrapper.className = 'preview-image';
+      wrapper.innerHTML = `<img src="${e.target.result}"><span class="remove-img">&times;</span>`;
+      wrapper.querySelector('.remove-img').addEventListener('click', ()=>{
+        previewImages.splice(i,1);
+        wrapper.remove();
+      });
+      previewContainer.appendChild(wrapper);
     }
     reader.readAsDataURL(file);
   });
 });
 
-// Load products
+// Products Data
 let products = JSON.parse(localStorage.getItem('products')) || [];
-const productsTableBody = document.querySelector('#productsTable tbody');
+let editIndex = null;
+const productsList = document.getElementById('productsList');
 
+// Render Products
 function renderProducts(){
-  productsTableBody.innerHTML = '';
+  productsList.innerHTML = '';
+  if(products.length === 0){
+    productsList.innerHTML = `<p style="text-align:center; color:#555;">No products added yet.</p>`;
+    return;
+  }
   products.forEach((p,index)=>{
-    const tr = document.createElement('tr');
-    const imagesHtml = p.images.map(src=>`<img src="${src}" alt="Product">`).join('');
-    tr.innerHTML = `
-      <td>${imagesHtml}</td>
-      <td>${p.name}</td>
-      <td>$${p.price}</td>
-      <td>${p.category}</td>
-      <td>
-        <button class="action-btn edit-btn" onclick="editProduct(${index})">Edit</button>
-        <button class="action-btn delete-btn" onclick="deleteProduct(${index})">Delete</button>
-      </td>
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.innerHTML = `
+      <img src="${p.images[0]}" alt="Product">
+      <h3>${p.name}</h3>
+      <p>Price: $${p.price}</p>
+      <p>Category: ${p.category}</p>
+      <div class="card-actions">
+        <button style="background:#007bff;" onclick="editProduct(${index})">Edit</button>
+        <button style="background:#dc3545;" onclick="deleteProduct(${index})">Delete</button>
+      </div>
     `;
-    productsTableBody.appendChild(tr);
+    productsList.appendChild(card);
   });
 }
-renderProducts();
 
-// Add product
+// Add / Update Product
 document.getElementById('productForm').addEventListener('submit', e=>{
   e.preventDefault();
-  const name = document.getElementById('prodName').value;
+  const name = document.getElementById('prodName').value.trim();
   const price = document.getElementById('prodPrice').value;
   const category = document.getElementById('prodCategory').value;
-  if(previewImages.length===0){ alert('Select at least one image'); return; }
+  if(!name || !price || !category || previewImages.length===0){ alert('All fields and at least one image are required'); return; }
 
-  products.push({name, price, category, images:previewImages});
+  const newProduct = {name, price, category, images:[...previewImages]};
+  if(editIndex !== null){
+    products[editIndex] = newProduct;
+    editIndex = null;
+    document.getElementById('submitBtn').textContent = 'Add Product';
+  } else {
+    products.push(newProduct);
+  }
+
   localStorage.setItem('products', JSON.stringify(products));
   renderProducts();
 
@@ -187,7 +192,7 @@ document.getElementById('productForm').addEventListener('submit', e=>{
   previewImages = [];
 });
 
-// Edit product
+// Edit Product
 function editProduct(index){
   const p = products[index];
   document.getElementById('prodName').value = p.name;
@@ -195,16 +200,21 @@ function editProduct(index){
   document.getElementById('prodCategory').value = p.category;
   previewImages = [...p.images];
   previewContainer.innerHTML = '';
-  previewImages.forEach(src=>{
-    const img = document.createElement('img');
-    img.src = src;
-    previewContainer.appendChild(img);
+  previewImages.forEach((src,i)=>{
+    const wrapper = document.createElement('div');
+    wrapper.className = 'preview-image';
+    wrapper.innerHTML = `<img src="${src}"><span class="remove-img">&times;</span>`;
+    wrapper.querySelector('.remove-img').addEventListener('click', ()=>{
+      previewImages.splice(i,1);
+      wrapper.remove();
+    });
+    previewContainer.appendChild(wrapper);
   });
-
-  products.splice(index,1);
+  editIndex = index;
+  document.getElementById('submitBtn').textContent = 'Save Changes';
 }
 
-// Delete product
+// Delete Product
 function deleteProduct(index){
   if(confirm('Delete this product?')){
     products.splice(index,1);
@@ -212,6 +222,9 @@ function deleteProduct(index){
     renderProducts();
   }
 }
+
+// Initial render
+renderProducts();
 </script>
 
 </body>
