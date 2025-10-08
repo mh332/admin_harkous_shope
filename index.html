@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard — Harkous Shop</title>
+<link rel="stylesheet" href="admin.css">
+<style>
+/* Basic admin styles in case admin.css is missing */
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #faf9f7;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.admin-header {
+  background: linear-gradient(90deg,#000,#6b3b2f);
+  color: #fff;
+  text-align: center;
+  padding: 1.5rem;
+  font-size: 1.5rem;
+}
+.admin-main {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  padding: 2rem;
+  flex: 1;
+}
+.admin-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  width: 220px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.admin-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+.admin-card h2 { margin-bottom: 10px; font-size: 1.2rem; }
+.admin-card p { font-size: 0.95rem; color: #555; }
+.admin-footer {
+  text-align: center;
+  padding: 1.5rem;
+  background: #6b3b2f;
+  color: #fff;
+  font-size: 0.9rem;
+}
+</style>
+</head>
+<body>
+
+<header class="admin-header">
+  <h1>🛍️ Harkous Shop — Admin Dashboard</h1>
+</header>
+
+<main class="admin-main">
+  <section class="admin-card" onclick="openPage('product.html')">
+    <h2>🧦 Products</h2>
+    <p>Add, edit, or delete products.</p>
+  </section>
+
+  <section class="admin-card" onclick="openPage('about.html')">
+    <h2>ℹ️ About Page</h2>
+    <p>Edit about text and images.</p>
+  </section>
+
+  <section class="admin-card" onclick="openPage('admin_contact.html')">
+    <h2>📞 Contact Info</h2>
+    <p>Update address, phone, and map.</p>
+  </section>
+
+  <section class="admin-card" onclick="openPage('https://mh332.github.io/Harkous_shop/')">
+    <h2>👁️ View Site</h2>
+    <p>Open the public website.</p>
+  </section>
+</main>
+
+<footer class="admin-footer">
+  <p>© 2025 Harkous Shop Admin Panel</p>
+</footer>
+
+<script>
+function openPage(url) {
+  window.location.href = url;
+}
+</script>
+
+</body>
+</html>
